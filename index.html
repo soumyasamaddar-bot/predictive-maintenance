@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Predictive Maintenance Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{--bg:#f2f4f6;--surface:#fff;--ink:#14212b;--muted:#5b6b78;--line:#d5dce2;--steel:#2f5d7c;--ok:#2a8a74;--warn:#c98a0a;--bad:#d1431f;--bad-bg:#fbe9e3;--ok-bg:#e4f3ef;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10181f;--surface:#18232c;--ink:#e6edf2;--muted:#93a4b1;--line:#2b3a46;--steel:#79a9c9;--ok:#4fc0a5;--warn:#e5b24a;--bad:#ff7b57;--bad-bg:#3a201a;--ok-bg:#16322c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10181f;--surface:#18232c;--ink:#e6edf2;--muted:#93a4b1;--line:#2b3a46;--steel:#79a9c9;--ok:#4fc0a5;--warn:#e5b24a;--bad:#ff7b57;--bad-bg:#3a201a;--ok-bg:#16322c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Source Sans 3",system-ui,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:28px 18px 64px}
+h1,h2{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;letter-spacing:.01em;margin:0}
+h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05}
+h2{font-size:1.6rem;margin-bottom:6px}
+p.lead{color:var(--muted);max-width:62ch;margin:10px 0 0}
+section{margin-top:44px}
+.sub{color:var(--muted);margin:0 0 16px;max-width:66ch}
+.counts{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px;font-family:"Barlow Condensed",sans-serif;font-size:1.5rem}
+.counts span{color:var(--muted);font-family:"Source Sans 3",sans-serif;font-size:.95rem;margin-left:6px}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.tile{border:2px solid var(--line);background:var(--surface);border-radius:4px;padding:10px 8px;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.tile b{font-family:"Barlow Condensed",sans-serif;font-size:1.3rem;display:block;line-height:1}
+.tile small{color:var(--muted)}
+.tile.Healthy{border-left:6px solid var(--ok)}
+.tile.Warning{border-left:6px solid var(--warn)}
+.tile.High{border-color:var(--bad);border-left-width:6px;background:var(--bad-bg)}
+.tile[aria-pressed="true"]{outline:3px solid var(--steel);outline-offset:1px}
+:focus-visible{outline:3px solid var(--steel);outline-offset:2px}
+.detail{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:16px 18px}
+.detail .row{display:flex;gap:26px;flex-wrap:wrap;margin-top:8px}
+.detail .row div{min-width:110px}
+.detail .row b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:1.5rem}
+.detail .row span{color:var(--muted);font-size:.9rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:16px 18px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600;font-size:.9rem}
+tr.pick td{font-weight:600;background:var(--ok-bg)}
+input[type=range]{width:100%;accent-color:var(--steel)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.big{font-family:"Barlow Condensed",sans-serif;font-size:2.4rem;line-height:1}
+.fi{display:grid;grid-template-columns:minmax(120px,190px) 1fr 44px;gap:8px;align-items:center;margin:6px 0;font-size:.92rem}
+.fi i{display:block;height:12px;background:var(--steel);border-radius:2px}
+.note{border-left:6px solid var(--warn);background:var(--surface);padding:14px 18px;border-radius:4px}
+.toggle{float:right;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 12px;font:inherit;cursor:pointer}
+footer{margin-top:44px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+<button class="toggle" id="theme" type="button">Switch theme</button>
+<h1>Which machines need maintenance first?</h1>
+<p class="lead">A model reads temperature, vibration and other sensor data from 20 machines and estimates the chance each one fails within the next 24 hours. This page shows the results of the latest run.</p>
+<div class="counts" id="counts"></div>
+
+<section>
+<h2>Machine status board</h2>
+<p class="sub">Each tile is one machine, based on its latest reading. Select a tile to see its details.</p>
+<div class="board" id="board"></div>
+<div class="detail" id="detail" aria-live="polite"></div>
+</section>
+
+<section>
+<h2>How cautious should the alarm be?</h2>
+<p class="sub">Move the slider to change the failure probability needed to raise an alarm. A low threshold misses fewer failures but causes more false alarms.</p>
+<div class="panel">
+<label for="thr">Alarm threshold: <b id="thrv">0.5</b></label>
+<input id="thr" type="range" min="1" max="9" value="5" step="1">
+<div class="two" style="margin-top:14px">
+<div><div class="big" id="fn"></div>Failures missed in the test period</div>
+<div><div class="big" id="fp"></div>False alarms in the test period</div>
+<div><div class="big" id="rc"></div>Recall (share of failures caught)</div>
+<div><div class="big" id="pr"></div>Precision (alarms that were real)</div>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Model comparison</h2>
+<p class="sub">Four models were trained on the earlier 75% of the timeline and tested on the most recent 25%. Random Forest is the main model.</p>
+<div class="panel scroll"><table id="models"></table></div>
+</section>
+
+<section>
+<h2>What the model watches</h2>
+<p class="sub">The eight signals that influence the Random Forest most. Vibration and temperature over the last 24 hours matter most.</p>
+<div class="panel" id="feat"></div>
+</section>
+
+<section>
+<h2>Failure-labelled readings by week</h2>
+<p class="sub">Share of readings each week that fall in the 24 hours before a failure.</p>
+<div class="panel"><svg id="trend" viewBox="0 0 700 180" width="100%" role="img" aria-label="Weekly share of failure-labelled readings"></svg></div>
+</section>
+
+<section>
+<div class="note"><b>Read this before trusting the numbers.</b> The sensor data is synthetic: it was generated so that sensors drift before each failure. That makes the scores unrealistically high (ROC-AUC about 0.999). A real factory dataset would give lower scores.</div>
+</section>
+
+<footer>Built with Python, pandas and scikit-learn. All figures come from the project’s <code>outputs/</code> folder.</footer>
+</main>
+<script>
+var D={"machines":[["M115",1.0,"High Risk",96.3,2.01,15764],["M114",0.997,"High Risk",97.1,1.99,16215],["M110",0,"Healthy",74.9,0.96,25286],["M118",0,"Healthy",73.1,0.84,12102],["M102",0,"Healthy",74.5,0.81,6364],["M101",0,"Healthy",79.4,0.85,21898],["M103",0,"Healthy",71.8,0.8,10006],["M104",0,"Healthy",73.3,0.8,14100],["M107",0,"Healthy",72.7,0.71,6880],["M119",0,"Healthy",77.7,0.82,19341],["M105",0,"Healthy",74.9,0.8,21207],["M106",0,"Healthy",74.5,0.89,9321],["M111",0,"Healthy",72.0,0.84,15374],["M108",0,"Healthy",76.7,0.82,19563],["M113",0,"Healthy",68.0,0.65,10911],["M112",0,"Healthy",75.9,0.74,15831],["M116",0,"Healthy",74.8,0.8,6980],["M117",0,"Healthy",71.0,0.87,9351],["M109",0,"Healthy",78.5,0.75,23972],["M120",0,"Healthy",74.6,0.74,12974]],
+"models":[["Logistic Regression",0.988,0.767,0.989,0.864,0.999,0.973],["Decision Tree",0.988,0.766,0.986,0.862,0.991,0.937],["Random Forest",0.991,0.814,0.982,0.89,0.999,0.962],["Gradient Boosting",0.99,0.808,0.96,0.877,0.994,0.95]],
+"feat":[["Vibration, 24 h average",0.145],["Vibration, 24 h minimum",0.127],["Temperature, 24 h average",0.122],["Temperature, 24 h minimum",0.078],["Vibration above normal range",0.077],["Vibration, current reading",0.069],["Vibration, 24 h maximum",0.059],["Vibration vs machine’s own average",0.053]],
+"thr":[[0.1,0.69,1.0,124,0],[0.2,0.74,0.99,96,2],[0.3,0.77,0.99,83,4],[0.4,0.79,0.99,73,4],[0.5,0.81,0.98,62,5],[0.6,0.85,0.97,48,7],[0.7,0.86,0.95,41,15],[0.8,0.88,0.92,33,23],[0.9,0.92,0.84,21,44]],
+"trend":[0,0.8,6.3,1.4,3.6,1.1,4.8,4.9,3.6,2.1,4.6,1.8,3.6,1.4,4.4,2.7,6.4,4.6,3.2,4.3,1.4,3.6,2.3,7.7,4.2,3.0,2.1,6.4,3.7,4.9,4.3,1.4,3.0,2.7,6.0]};
+var $=function(i){return document.getElementById(i)};
+var rec={"High Risk":"Schedule preventive maintenance within 24 hours.","Warning":"Plan an inspection in the next maintenance window.","Healthy":"Continue routine monitoring."};
+var n=D.machines.length,hi=0,wa=0;
+D.machines.forEach(function(m){if(m[2]=="High Risk")hi++;if(m[2]=="Warning")wa++});
+$("counts").innerHTML='<div>'+n+'<span>machines</span></div><div style="color:var(--ok)">'+(n-hi-wa)+'<span>healthy</span></div><div style="color:var(--warn)">'+wa+'<span>warning</span></div><div style="color:var(--bad)">'+hi+'<span>high risk</span></div>';
+function show(i){
+  var m=D.machines[i];
+  Array.prototype.forEach.call($("board").children,function(b,j){b.setAttribute("aria-pressed",j==i)});
+  $("detail").innerHTML='<b style="font-family:Barlow Condensed,sans-serif;font-size:1.5rem">'+m[0]+' · '+m[2]+'</b><div>'+rec[m[2]]+'</div><div class="row"><div><b>'+(m[1]*100).toFixed(1)+'%</b><span>failure probability</span></div><div><b>'+m[3]+' °C</b><span>temperature</span></div><div><b>'+m[4]+' mm/s</b><span>vibration</span></div><div><b>'+m[5].toLocaleString()+' h</b><span>operating hours</span></div></div>';
+}
+D.machines.forEach(function(m,i){
+  var b=document.createElement("button");b.type="button";b.className="tile "+m[2].split(" ")[0];
+  b.innerHTML='<b>'+m[0]+'</b><small>'+(m[1]*100).toFixed(0)+'% risk</small>';
+  b.onclick=function(){show(i)};$("board").appendChild(b);
+});
+show(0);
+function thr(){
+  var r=D.thr[$("thr").value-1];
+  $("thrv").textContent=r[0].toFixed(1);$("pr").textContent=(r[1]*100).toFixed(0)+"%";
+  $("rc").textContent=(r[2]*100).toFixed(0)+"%";$("fp").textContent=r[3];$("fn").textContent=r[4];
+}
+$("thr").oninput=thr;thr();
+var h="<thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>ROC-AUC</th></tr></thead><tbody>";
+D.models.forEach(function(m){h+='<tr'+(m[0]=="Random Forest"?' class="pick"':'')+'><td>'+m[0]+'</td>'+m.slice(1,6).map(function(v){return'<td>'+v.toFixed(3)+'</td>'}).join("")+'</tr>'});
+$("models").innerHTML=h+"</tbody>";
+var mx=D.feat[0][1];
+$("feat").innerHTML=D.feat.map(function(f){return'<div class="fi"><span>'+f[0]+'</span><i style="width:'+(f[1]/mx*100)+'%"></i><span>'+(f[1]*100).toFixed(1)+'%</span></div>'}).join("");
+var t=D.trend,W=700,H=180,p=26,mxv=8,pts=t.map(function(v,i){return[p+i*(W-2*p)/(t.length-1),H-p-(v/mxv)*(H-2*p)]});
+$("trend").innerHTML='<line x1="'+p+'" y1="'+(H-p)+'" x2="'+(W-p)+'" y2="'+(H-p)+'" stroke="var(--line)"/><polyline fill="none" stroke="var(--steel)" stroke-width="2.5" points="'+pts.map(function(q){return q.join(",")}).join(" ")+'"/><text x="'+p+'" y="14" fill="var(--muted)" font-size="12">8%</text><text x="'+p+'" y="'+(H-6)+'" fill="var(--muted)" font-size="12">Jan 2026</text><text x="'+(W-p)+'" y="'+(H-6)+'" text-anchor="end" fill="var(--muted)" font-size="12">Aug 2026</text>';
+var root=document.documentElement;
+$("theme").onclick=function(){var dark=root.dataset.theme?root.dataset.theme=="dark":matchMedia("(prefers-color-scheme:dark)").matches;root.dataset.theme=dark?"light":"dark"};
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+Stage,Records,Missing Values,Duplicates
+Before Cleaning,28915,2027,115
+After Cleaning,28800,0,0

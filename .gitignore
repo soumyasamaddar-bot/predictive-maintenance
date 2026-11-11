@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.vscode/
+.idea/
+.DS_Store
+# Generated artefacts (re-create by running main.py)
+data/processed/*.csv
+outputs/models/*.joblib
+outputs/logs/*.log
+# Block notebooks - this project is scripts only
+*.ipynb
+.ipynb_checkpoints/

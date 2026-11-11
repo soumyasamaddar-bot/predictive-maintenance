@@ -1,0 +1,13 @@
+Field,Type,Description
+Machine_ID,Categorical,Unique equipment identifier
+Timestamp,Date/Time,Time of the sensor reading
+Temperature,Numeric (deg C),Thermal condition of the machine
+Pressure,Numeric (psi),Operating pressure
+Vibration,Numeric (mm/s),Mechanical condition (bearing/imbalance)
+RPM,Numeric (rpm),Operating speed
+Current,Numeric (A),Electrical load
+Voltage,Numeric (V),Electrical supply condition
+Operating_Hours,Numeric (hours),Cumulative equipment usage
+Maintenance_Count,Numeric (count),Maintenance events so far
+Machine_Age,Numeric (years),Asset age
+Failure,Binary 0/1,1 = failure occurs within the prediction horizon

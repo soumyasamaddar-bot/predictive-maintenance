@@ -1,0 +1,9 @@
+KPI,Value
+Total Machines,20.0
+Healthy Machines,18.0
+Warning Machines,0.0
+High Risk Machines,2.0
+Failure Rate (%),3.52
+Average Temperature,78.16
+Average Vibration,0.958
+Total Readings,28800.0
